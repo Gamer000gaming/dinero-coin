@@ -16,22 +16,28 @@ from denaro.transactions import Transaction, TransactionOutput, TransactionInput
 from denaro.constants import CURVE
 from denaro.helpers import point_to_string, sha256, string_to_point
 
-NODE_URL = 'https://denaro-node.gaetano.eu.org'
+NODE_URL = 'http://0.0.0.0:3006'
 
 
 def get_address_info(address: str):
-    request = requests.get(f'{NODE_URL}/get_address_info', {'address': address, 'transactions_count_limit': 0, 'show_pending': True })
-    result = request.json()['result']
-    tx_inputs = []
-    pending_spent_outputs = [tuple(output) for output in result['pending_spent_outputs']]
-    for spendable_tx_input in result['spendable_outputs']:
-        if (spendable_tx_input['tx_hash'], spendable_tx_input['index']) in pending_spent_outputs:
-            continue
-        tx_input = TransactionInput(spendable_tx_input['tx_hash'], spendable_tx_input['index'])
-        tx_input.amount = Decimal(str(spendable_tx_input['amount']))
-        tx_input.public_key = string_to_point(address)
-        tx_inputs.append(tx_input)
-    return Decimal(result['balance']), tx_inputs
+    try:
+        request = requests.get(f'{NODE_URL}/get_address_info', {'address': address, 'transactions_count_limit': 0, 'show_pending': True })
+        request.raise_for_status()  # Raise an exception for bad status codes
+        result = request.json()['result']
+        tx_inputs = []
+        pending_spent_outputs = [tuple(output) for output in result['pending_spent_outputs']]
+        for spendable_tx_input in result['spendable_outputs']:
+            if (spendable_tx_input['tx_hash'], spendable_tx_input['index']) in pending_spent_outputs:
+                continue
+            tx_input = TransactionInput(spendable_tx_input['tx_hash'], spendable_tx_input['index'])
+            tx_input.amount = Decimal(str(spendable_tx_input['amount']))
+            tx_input.public_key = string_to_point(address)
+            tx_inputs.append(tx_input)
+        return Decimal(result['balance']), tx_inputs
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Could not connect to the node or invalid response: {e}")
+    except json.decoder.JSONDecodeError as e:
+        raise Exception(f"Invalid JSON response from node: {e}. Response text: {request.text}")
 
 
 def create_transaction(private_keys, receiving_address, amount, message: bytes = None, send_back_address=None):
@@ -91,6 +97,7 @@ async def main():
     parser.add_argument('-to', metavar='recipient', type=str, required=False)
     parser.add_argument('-d', metavar='amount', type=str, required=False)
     parser.add_argument('-m', metavar='message', type=str, dest='message', required=False)
+    parser.add_argument('-pk', metavar='private_key', type=str, dest='private_key', required=False)
 
     args = parser.parse_args()
     db = pickledb.load(f'{dir_path}/wallet.json', True)
@@ -106,7 +113,8 @@ async def main():
         public_key = keys.get_public_key(private_key, curve.P256)
         address = point_to_string(public_key)
 
-        print(f'Private key: {hex(private_key)}\nAddress: {address}')
+        print(f'''Private key: {hex(private_key)}
+Address: {address}''')
     elif command == 'balance':
         private_keys = db.get('private_keys') or []
         total_balance = 0
@@ -119,18 +127,22 @@ async def main():
             print(f'\nAddress: {address}\nPrivate key: {hex(private_key)}\nBalance: {balance}{f" ({pending_balance - balance} pending)" if pending_balance - balance != 0 else ""}')
         print(f'\nTotal Balance: {total_balance}')
     elif command == 'send':
-        parser = argparse.ArgumentParser()
-        parser.add_argument('command', metavar='command', type=str, help='action to do with the wallet')
-        parser.add_argument('-to', metavar='recipient', type=str, dest='recipient', required=True)
-        parser.add_argument('-d', metavar='amount', type=str, dest='amount', required=True)
-        parser.add_argument('-m', metavar='message', type=str, dest='message', required=False)
-
-        args = parser.parse_args()
-        receiver = args.recipient
-        amount = args.amount
+        receiver = args.to
+        amount = args.d
         message = args.message
+        private_key_arg = args.private_key
 
-        tx = create_transaction(db.get('private_keys'), receiver, amount, string_to_bytes(message))
+        private_keys = db.get('private_keys') or []
+
+        if private_key_arg:
+            # Use the provided private key for sending
+            pk_int = int(private_key_arg, 16)
+            if pk_int not in private_keys:
+                raise Exception("Error: Provided private key not found in wallet.")
+            tx = create_transaction([pk_int], receiver, amount, string_to_bytes(message))
+        else:
+            # Use all private keys if none is specified
+            tx = create_transaction(private_keys, receiver, amount, string_to_bytes(message))
         print(f'Transaction pushed. Transaction hash: {sha256(tx.hex())}')
 
 
