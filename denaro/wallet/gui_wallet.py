@@ -5,6 +5,7 @@ import sys
 import pickledb
 import subprocess
 import traceback
+import json
 from fastecdsa import keys, curve
 from tkinter import simpledialog, messagebox
 
@@ -32,16 +33,19 @@ class WalletApp(tk.Tk):
         self.send_tab = ttk.Frame(self.notebook, width=800, height=600)
         self.balance_tab = ttk.Frame(self.notebook, width=800, height=600)
         self.manage_wallets_tab = ttk.Frame(self.notebook, width=800, height=600)
+        self.history_tab = ttk.Frame(self.notebook, width=800, height=600)
 
         self.notebook.add(self.create_wallet_tab, text='Create Wallet')
         self.notebook.add(self.send_tab, text='Send')
         self.notebook.add(self.balance_tab, text='Balance')
         self.notebook.add(self.manage_wallets_tab, text='Manage Wallets')
+        self.notebook.add(self.history_tab, text='History')
 
         self.create_wallet_widgets()
         self.create_send_widgets()
         self.create_balance_widgets()
         self.create_manage_wallets_widgets()
+        self.create_history_widgets()
         self.load_wallets()
 
     def create_manage_wallets_widgets(self):
@@ -179,6 +183,75 @@ class WalletApp(tk.Tk):
         self.clipboard_clear()
         self.clipboard_append(address)
         self.manage_wallets_status_label.config(text=f"Address copied to clipboard: {address}")
+
+    def create_history_widgets(self):
+        # Address selection
+        address_label = ttk.Label(self.history_tab, text="Select Address:")
+        address_label.pack(pady=5)
+        self.history_address_combobox = ttk.Combobox(self.history_tab, width=57)
+        self.history_address_combobox.pack(pady=5)
+        self.update_history_addresses()
+
+        refresh_button = ttk.Button(self.history_tab, text="Refresh", command=self.refresh_history)
+        refresh_button.pack(pady=10)
+
+        self.history_tree = ttk.Treeview(self.history_tab, columns=("Transaction Hash", "Amount", "Time Received"), show='headings')
+        self.history_tree.heading("Transaction Hash", text="Transaction Hash")
+        self.history_tree.heading("Amount", text="Amount")
+        self.history_tree.heading("Time Received", text="Time Received")
+        self.history_tree.pack(fill="both", expand=True)
+
+    def update_history_addresses(self):
+        private_keys = self.wallet_db.get('private_keys') or []
+        addresses = []
+        for pk in private_keys:
+            address = point_to_string(keys.get_public_key(pk, CURVE))
+            name = self.wallet_names_db.get(address) or address
+            addresses.append(name)
+        self.history_address_combobox['values'] = addresses
+        if addresses:
+            if self.main_address:
+                main_name = self.wallet_names_db.get(self.main_address) or self.main_address
+                self.history_address_combobox.set(main_name)
+            else:
+                self.history_address_combobox.set(addresses[0])
+
+    def refresh_history(self):
+        self.history_tree.delete(*self.history_tree.get_children())
+        selected_address_name = self.history_address_combobox.get()
+        if not selected_address_name:
+            return
+
+        # Find the actual address from the name
+        private_keys = self.wallet_db.get('private_keys') or []
+        selected_address = None
+        for pk in private_keys:
+            address = point_to_string(keys.get_public_key(pk, CURVE))
+            name = self.wallet_names_db.get(address) or address
+            if name == selected_address_name:
+                selected_address = address
+                break
+
+        if not selected_address:
+            return
+
+        try:
+            result = subprocess.run(["python3", f"{dir_path}/nodeless_wallet.py", "history", "-a", selected_address], capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"Error running nodeless_wallet.py history:\n{result.stderr}")
+                return
+
+            history = json.loads(result.stdout)
+            for tx in history:
+                amount = 0
+                for vout in tx['outputs']:
+                    if selected_address == vout['address']:
+                        amount += float(vout['amount'])
+                
+                timestamp_to_display = tx.get('time_confirmed') or tx.get('time_received')
+                self.history_tree.insert("", "end", values=(tx['hash'], amount, timestamp_to_display))
+        except Exception as e:
+            print(traceback.format_exc())
 
     def copy_address_to_clipboard(self):
         selected_item = self.wallets_tree.focus()
@@ -319,12 +392,8 @@ Address: {address}''')
             name = self.wallet_names_db.get(address) or address
             is_main = "Yes" if address == self.main_address else "No"
             self.wallets_tree.insert("", "end", values=(name, address, is_main))
-        private_keys = self.wallet_db.get('private_keys') or []
-        for pk in private_keys:
-            address = point_to_string(keys.get_public_key(pk, CURVE))
-            name = self.wallet_names_db.get(address) or address
-            is_main = "Yes" if address == self.main_address else "No"
-            self.wallets_tree.insert("", "end", values=(name, address, is_main))
+        self.update_send_addresses()
+        self.update_history_addresses()
 
 if __name__ == '__main__':
     app = WalletApp()

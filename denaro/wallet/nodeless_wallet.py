@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import os
 import sys
+import json
 from decimal import Decimal
 
 import pickledb
@@ -34,6 +35,16 @@ def get_address_info(address: str):
             tx_input.public_key = string_to_point(address)
             tx_inputs.append(tx_input)
         return Decimal(result['balance']), tx_inputs
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Could not connect to the node or invalid response: {e}")
+    except json.decoder.JSONDecodeError as e:
+        raise Exception(f"Invalid JSON response from node: {e}. Response text: {request.text}")
+
+def get_address_history(address: str):
+    try:
+        request = requests.get(f'{NODE_URL}/get_address_info', {'address': address, 'transactions_count_limit': 50})
+        request.raise_for_status()  # Raise an exception for bad status codes
+        return request.json()['result']['transactions']
     except requests.exceptions.RequestException as e:
         raise Exception(f"Could not connect to the node or invalid response: {e}")
     except json.decoder.JSONDecodeError as e:
@@ -93,11 +104,12 @@ def create_transaction(private_keys, receiving_address, amount, message: bytes =
 
 async def main():
     parser = argparse.ArgumentParser(description='Denaro wallet')
-    parser.add_argument('command', metavar='command', type=str, help='action to do with the wallet', choices=['createwallet', 'send', 'balance'])
+    parser.add_argument('command', metavar='command', type=str, help='action to do with the wallet', choices=['createwallet', 'send', 'balance', 'history'])
     parser.add_argument('-to', metavar='recipient', type=str, required=False)
     parser.add_argument('-d', metavar='amount', type=str, required=False)
     parser.add_argument('-m', metavar='message', type=str, dest='message', required=False)
     parser.add_argument('-pk', metavar='private_key', type=str, dest='private_key', required=False)
+    parser.add_argument('-a', metavar='address', type=str, dest='address', required=False)
 
     args = parser.parse_args()
     db = pickledb.load(f'{dir_path}/wallet.json', True)
@@ -144,6 +156,10 @@ Address: {address}''')
             # Use all private keys if none is specified
             tx = create_transaction(private_keys, receiver, amount, string_to_bytes(message))
         print(f'Transaction pushed. Transaction hash: {sha256(tx.hex())}')
+    elif command == 'history':
+        address = args.address
+        history = get_address_history(address)
+        print(json.dumps(history))
 
 
 if __name__ == '__main__':
