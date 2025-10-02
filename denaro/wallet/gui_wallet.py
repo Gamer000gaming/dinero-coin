@@ -6,6 +6,7 @@ import pickledb
 import subprocess
 import traceback
 import json
+from datetime import datetime
 from fastecdsa import keys, curve
 from tkinter import simpledialog, messagebox
 
@@ -249,6 +250,8 @@ class WalletApp(tk.Tk):
                         amount += float(vout['amount'])
                 
                 timestamp_to_display = tx.get('time_confirmed') or tx.get('time_received')
+                if timestamp_to_display:
+                    timestamp_to_display = datetime.fromtimestamp(timestamp_to_display).strftime('%Y-%m-%d %H:%M:%S')
                 self.history_tree.insert("", "end", values=(tx['hash'], amount, timestamp_to_display))
         except Exception as e:
             print(traceback.format_exc())
