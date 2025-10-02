@@ -67,6 +67,7 @@ class WalletApp(tk.Tk):
         self.wallets_context_menu = tk.Menu(self, tearoff=0)
         self.wallets_context_menu.add_command(label="Copy Address", command=self.copy_address_to_clipboard)
         self.wallets_tree.bind("<Button-3>", self.show_wallets_context_menu)
+        self.wallets_tree.bind("<Double-1>", self.copy_address_on_double_click)
 
     def create_wallet_widgets(self):
         create_wallet_button = ttk.Button(self.create_wallet_tab, text="Create New Address", command=self.create_wallet)
@@ -169,6 +170,15 @@ class WalletApp(tk.Tk):
 
     def show_wallets_context_menu(self, event):
         self.wallets_context_menu.post(event.x_root, event.y_root)
+
+    def copy_address_on_double_click(self, event):
+        selected_item = self.wallets_tree.focus()
+        if not selected_item:
+            return
+        address = self.wallets_tree.item(selected_item)['values'][1]
+        self.clipboard_clear()
+        self.clipboard_append(address)
+        self.manage_wallets_status_label.config(text=f"Address copied to clipboard: {address}")
 
     def copy_address_to_clipboard(self):
         selected_item = self.wallets_tree.focus()
