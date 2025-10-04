@@ -18,7 +18,9 @@
 * [DVM (Denaro Virtual Machine)](https://github.com/denaro-coin/dvm)
 * [Denaro Vanity Generator](https://github.com/The-Sycorax/Denaro-Vanity-Generator)
 * [Denaro-Vanity-Gen](https://github.com/Avecci-Claussen/Denaro-Vanity-Gen)
-  
+
+Some of these projects may be not cmpatible with Dinero.
+
 ## Installation
 **Automated configuration and deployment of a Dinero node are facilitated by the `setup.sh` script. It handles system package updates, manages environment variables, configures the PostgreSQL database, sets up a Python virtual environment, installs the required Python dependencies, and initiates the Dinero node. This script ensures that all prerequisites for operating a Denaro node are met and properly configured accoring to the user's preference.**
  
