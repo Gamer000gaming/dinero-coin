@@ -1,5 +1,5 @@
-# Denaro
-**Denaro**, 'money' in Italian, is a cryptocurrency developed entirely in Python and utilizes PostgreSQL for it's blockchain.
+# Dinero
+**Dinero**, 'money' in Spanish, is a cryptocurrency developed entirely in Python and utilizes PostgreSQL for it's blockchain. It's a fork of [Denaro](https://github.com/denaro-coin/denaro). Dinero is also partially compatible with Denaro. That means you can use some of the tools made for Denaro on the Dinero blockchain.
 
 * **Features**: 
   * Maximum supply of 30,062,005 coins.
@@ -7,7 +7,7 @@
   * Blocks are generated approximately every ~3 minutes, with a limit of 2MB per block.
   * Given an average transaction size of 250 bytes (comprising of 5 inputs and 2 outputs), a single block can accommodate approximately ~8300 transactions, which translates to about ~40 transactions per second.
 
-## Denaro Projects
+## Projects for the Denaro coin
 * [Denaro Wallet Client GUI](https://github.com/The-Sycorax/DenaroWalletClient-GUI)
 * [Denaro Wallet Client CLI](https://github.com/The-Sycorax/DenaroWalletClient)
 * [Denaro CUDA Pool miner](https://github.com/1460293896/denaro-cuda-miner)
@@ -20,7 +20,7 @@
 * [Denaro-Vanity-Gen](https://github.com/Avecci-Claussen/Denaro-Vanity-Gen)
   
 ## Installation
-**Automated configuration and deployment of a Denaro node are facilitated by the `setup.sh` script. It handles system package updates, manages environment variables, configures the PostgreSQL database, sets up a Python virtual environment, installs the required Python dependencies, and initiates the Denaro node. This script ensures that all prerequisites for operating a Denaro node are met and properly configured accoring to the user's preference.**
+**Automated configuration and deployment of a Dinero node are facilitated by the `setup.sh` script. It handles system package updates, manages environment variables, configures the PostgreSQL database, sets up a Python virtual environment, installs the required Python dependencies, and initiates the Dinero node. This script ensures that all prerequisites for operating a Denaro node are met and properly configured accoring to the user's preference.**
  
 - The setup script accepts three optional arguments to adjust its behavior during installation:
 
@@ -33,8 +33,8 @@
 **Execute the commands below to initiate the installation:**
 
   ```bash
-  # Clone the Denaro repository to your local machine.
-  git clone https://github.com/denaro-coin/denaro.git
+  # Clone the Dinero repository to your local machine.
+  git clone https://github.com/Gamer000gaming/dinero-coin.git
   
   # Change directory to the cloned repository.
   cd denaro
@@ -77,17 +77,17 @@ Once the required packages have been installed, the `--skip-package-install` arg
 </dd></dl>
 </details>
 
-## Running a Denaro Node
+## Running a Dinero Node
 
-A Denaro node can be started manually if you have already executed the `setup.sh` script and chose not to start the node immediately, or if you need to start the node in a new terminal session. 
+A Dinero node can be started manually if you have already executed the `setup.sh` script and chose not to start the node immediately, or if you need to start the node in a new terminal session. 
 
 ***Note:** Users who have used the setup script with the `--setup-db` argument or have performed a manual installation, should create a Python virtual environment (Optional) and ensure that the required Python packages are installed prior to starting a node.*
 
-Execute the commands below to manually start a Denaro node:
+Execute the commands below to manually start a Dinero node:
 
 ```bash
-# Navigate to the Denaro directory.
-cd path/to/denaro
+# Navigate to the Dinero directory.
+cd path/to/dinero
 
 # Set up a Python virtual environment (Optional but recommended).
 sudo apt install python3-venv
@@ -98,7 +98,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Manualy start the Denaro node on port 3006 or another specified port.
-uvicorn denaro.node.main:app --port 3006
+uvicorn dinero.node.main:app --port 3006
 
 # To stop the node, press Ctrl+C in the terminal.
 ```
@@ -126,7 +126,7 @@ curl http://localhost:3006/sync_blockchain
 
 ## Mining
 
-**Denaro** adopts a Proof of Work (PoW) system for mining:
+**Dinero** adopts a Proof of Work (PoW) system for mining:
 
 - **Block Hashing**:
   - Utilizes the sha256 algorithm for block hashing.
@@ -150,4 +150,4 @@ curl http://localhost:3006/sync_blockchain
   - After this, blocks do not offer a mining reward, but transaction fees are still applicable. A transaction may also have no fees at all.
 
 ## License
-Denaro is released under the terms of the GNU Affero General Public License v3.0. See [LICENSE](LICENSE) for more information or goto https://www.gnu.org/licenses/agpl-3.0.en.html
+Dinero is released under the terms of the GNU Affero General Public License v3.0. See [LICENSE](LICENSE) for more information or goto https://www.gnu.org/licenses/agpl-3.0.en.html
