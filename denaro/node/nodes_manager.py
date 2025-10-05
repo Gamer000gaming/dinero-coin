@@ -30,7 +30,7 @@ class NodesManager:
     @staticmethod
     def init():
         NodesManager.db._loaddb()
-        NodesManager.nodes = NodesManager.db.get('nodes') or ['https://denaro-node.gaetano.eu.org']
+        NodesManager.nodes = NodesManager.db.get('nodes') or ['http://88.166.181.153:3006']
         NodesManager.last_messages = NodesManager.db.get('last_messages') or {'https://denaro-node.gaetano.eu.org': timestamp()}
 
     @staticmethod
